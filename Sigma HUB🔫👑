@@ -1,0 +1,725 @@
+local CarGuardEnabled = false
+local oldFireServer
+
+oldFireServer = hookfunction(Instance.new('RemoteEvent').FireServer, newcclosure(function(self, ...)
+    local args = {...}
+
+    if not checkcaller() and CarGuardEnabled and tostring(self) == 'Send' then
+        for _, v in pairs(args)do
+            if tostring(v) == 'crashed_car' then
+                return nil
+            end
+        end
+    end
+
+    return oldFireServer(self, ...)
+end))
+
+if not game:IsLoaded() then
+    repeat
+        task.wait()
+    until game:IsLoaded()
+end
+if not (game.PlaceId == 104715542330896 or game.PlaceId == 97556409405464) then
+    return
+end
+
+game:GetService('ReplicatedStorage')
+
+if getgenv then
+    getgenv().identifyexecutor = nil
+end
+if getfenv then
+    local env = getfenv()
+
+    env.identifyexecutor = nil
+end
+
+local v_u_1 = {}
+local v2 = game.ReplicatedStorage:WaitForChild('Remotes')
+local v_u_3 = {
+    send = v2:WaitForChild('Send'),
+    get = v2:WaitForChild('Get'),
+}
+local v_u_4 = {
+    event = 0,
+    func = 0,
+}
+local v_u_5 = {}
+local v_u_6 = false
+local v_u_7 = {}
+
+function v_u_1.on_connect(p8)
+    if v_u_6 then
+        p8()
+    else
+        v_u_7[#v_u_7 + 1] = p8
+    end
+end
+function v_u_1.hook(p_u_9, p_u_10)
+    if not p_u_10 then
+        error('Function nil for hook ' .. p_u_9)
+    end
+    if v_u_6 then
+        if v_u_5[p_u_9] then
+            warn("Overwriting hook '" .. p_u_9 .. "'.")
+        else
+            v_u_5[p_u_9] = p_u_10
+        end
+    else
+        v_u_1.on_connect(function()
+            v_u_1.hook(p_u_9, p_u_10)
+        end)
+
+        return
+    end
+end
+function v_u_1.is_connected(p11)
+    return p11:GetAttribute('IsConnected') and true or false
+end
+
+local function v_u_19(p12, p13, p14, p15, ...)
+    return p12(p13, p14, p15, ...)
+end
+
+task.wait(0.1)
+
+local v_u_20 = v_u_3.send
+local v_u_21 = v_u_3.send.FireServer
+
+function v_u_1.send(p22, ...)
+    if CarGuardEnabled and p22 == 'crashed_car' then
+        return nil
+    end
+
+    v_u_4.event = v_u_4.event + 1
+
+    v_u_21(v_u_20, v_u_4.event, p22, ...)
+end
+
+local v_u_23 = v_u_3.get
+local v_u_24 = v_u_3.get.InvokeServer
+
+function v_u_1.get(p25, ...)
+    v_u_4.func = v_u_4.func + 1
+
+    return v_u_24(v_u_23, v_u_4.func, p25, ...)
+end
+
+task.wait(0.1)
+
+local function v_u_29()
+    v_u_3.send.OnClientEvent:connect(function(p26, ...)
+        if v_u_5[p26] then
+            v_u_5[p26](...)
+        else
+            error("Invalid hook '" .. p26 .. "' fired!", 0)
+        end
+    end)
+
+    function v_u_3.get.OnClientInvoke(p27, ...)
+        if v_u_5[p27] then
+            return v_u_5[p27](...)
+        end
+
+        error("Invalid hook '" .. p27 .. "' invoked!", 0)
+    end
+
+    if not pcall(function()
+        for v28 = 1, #v_u_7 do
+            v_u_7[v28]()
+        end
+    end) then
+        pcall(function()
+            print('On connect failed for client')
+            v_u_1.send('issue', 'On connect failed for client')
+        end)
+    end
+end
+
+function v_u_1.initiate() end
+function v_u_1.loaded()
+    function v_u_3.get.OnClientInvoke(p30)
+        if p30 == 'connect' then
+            v_u_6 = true
+
+            v_u_29()
+
+            return true
+        end
+    end
+
+    v_u_1.hook('ping', function()
+        return true
+    end)
+end
+
+print('bypassed')
+
+local TweenService = game:GetService('TweenService')
+local Players = game:GetService('Players')
+local player = Players.LocalPlayer
+
+task.spawn(function()
+    local splashGui = player.PlayerGui:WaitForChild('SplashScreenGui', 5)
+
+    if splashGui then
+        local frame = splashGui:FindFirstChild('Frame')
+
+        if frame then
+            frame.Visible = false
+        end
+
+        local redBackdrop = splashGui:FindFirstChild('RedBackdrop')
+
+        if redBackdrop and redBackdrop:FindFirstChild('UIGradient') then
+            local gradient = redBackdrop.UIGradient
+
+            gradient.Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.new(0, 0, 0)),
+                ColorSequenceKeypoint.new(1, Color3.new(0.421, 0.411, 0.498)),
+            })
+        end
+    end
+end)
+
+local modeSelected = false
+
+local function RunNormalMode()
+    if getgenv then
+        getgenv().identifyexecutor = nil
+    end
+    if getfenv then
+        getfenv().identifyexecutor = nil
+    end
+
+    local ReplicatedStorage = game:GetService('ReplicatedStorage')
+    local Net = require(ReplicatedStorage.Modules.Core.Net)
+    local UI = require(ReplicatedStorage.Modules.Core.UI)
+
+    task.spawn(function()
+        local TransitionUI = nil
+
+        while not TransitionUI do
+            for _, v in pairs(getgc(true))do
+                if type(v) == 'table' and rawget(v, 'conditional_transition') then
+                    TransitionUI = v
+
+                    break
+                end
+            end
+
+            task.wait(0.1)
+        end
+
+        TransitionUI.transition = function()
+            return
+        end
+        TransitionUI.conditional_transition = function()
+            return
+        end
+
+        if TransitionUI.enabled then
+            TransitionUI.enabled.set(false)
+        end
+        if TransitionUI.conditional_enabled then
+            TransitionUI.conditional_enabled.set(false)
+        end
+    end)
+    task.spawn(function()
+        workspace:SetAttribute('SkipCreator', true)
+
+        local CC = nil
+
+        while not CC do
+            for _, v in pairs(getgc(true))do
+                if type(v) == 'table' and rawget(v, 'is_in_creator') and rawget(v, 'finish') then
+                    CC = v
+
+                    break
+                end
+            end
+
+            task.wait(0.1)
+        end
+
+        CC.is_in_creator.hook(function(isIn)
+            if isIn then
+                CC.finish(false)
+            end
+        end)
+
+        if CC.leaving_creator then
+            CC.leaving_creator.set(true)
+        end
+    end)
+    task.spawn(function()
+        local PlayButton = UI.get('PlayButton')
+
+        if PlayButton then
+            for _, connection in pairs(getconnections(PlayButton.MouseButton1Click))do
+                connection:Fire()
+            end
+        end
+    end)
+
+    modeSelected = true
+end
+local function RunGodMode()
+    local ReplicatedStorage = game:GetService('ReplicatedStorage')
+    local UI = require(ReplicatedStorage.Modules.Core.UI)
+    local Net = require(ReplicatedStorage.Modules.Core.Net)
+    local Char = require(ReplicatedStorage.Modules.Core.Char)
+
+    local function ExecuteGodModeStrict()
+        local hrp = Char.get_hrp()
+
+        if not hrp then
+            return false
+        end
+
+        local frozenCFrame = hrp.CFrame
+        local oldSend = Net.send
+
+        Net.send = function(name, ...)
+            if name == 'replicate_cc_cframe' then
+                if type(oldSend) == 'function' then
+                    return oldSend(name, frozenCFrame)
+                end
+
+                return
+            end
+            if name == 'leave_character_creator' or name == 'player_created_outfit' then
+                return nil
+            end
+            if type(oldSend) == 'function' then
+                return oldSend(name, ...)
+            end
+        end
+
+        task.spawn(function()
+            while task.wait(0.1) do
+                if hrp and hrp.Parent then
+                    hrp.Anchored = false
+                end
+            end
+        end)
+
+        for _, v in pairs(getgc(true))do
+            if type(v) == 'table' and rawget(v, 'leaving_creator') and type(v.leaving_creator) == 'table' then
+                v.leaving_creator.set(true)
+
+                break
+            end
+        end
+
+        pcall(function()
+            Net.send('request_respawn')
+        end)
+        task.wait(6.2)
+        pcall(function()
+            return Net.get('death_screen_request_respawn')
+        end)
+
+        return true
+    end
+
+    task.spawn(function()
+        local TransitionUI = nil
+
+        while not TransitionUI do
+            for _, v in pairs(getgc(true))do
+                if type(v) == 'table' and rawget(v, 'conditional_transition') then
+                    TransitionUI = v
+
+                    break
+                end
+            end
+
+            task.wait(0.5)
+        end
+
+        local oldTransition = TransitionUI.conditional_transition
+
+        TransitionUI.conditional_transition = function(self, p15, p16, p17)
+            local originalWait = TransitionUI.conditional_enabled.wait
+
+            TransitionUI.conditional_enabled.wait = function(...)
+                local startTime = tick()
+
+                ExecuteGodModeStrict()
+
+                local elapsed = tick() - startTime
+
+                if elapsed < 8 then
+                    task.wait(8 - elapsed)
+                end
+
+                return nil
+            end
+
+            local res = oldTransition(self, p15, p16, p17)
+
+            TransitionUI.conditional_enabled.wait = originalWait
+
+            return res
+        end
+    end)
+    task.spawn(function()
+        local CC = nil
+
+        while not CC do
+            for _, v in pairs(getgc(true))do
+                if type(v) == 'table' and rawget(v, 'is_in_creator') and rawget(v, 'finish') then
+                    CC = v
+
+                    break
+                end
+            end
+
+            task.wait(0.1)
+        end
+
+        CC.is_in_creator.hook(function(isIn)
+            if isIn then
+                task.wait(0)
+                CC.finish(false)
+            end
+        end)
+    end)
+
+    local PlayButton = UI.get('PlayButton')
+
+    if PlayButton then
+        for _, v in pairs(getconnections(PlayButton.MouseButton1Click))do
+            v:Fire()
+        end
+    end
+
+    modeSelected = true
+end
+
+if player:GetAttribute('InSplashScreen') == true then
+    if player.PlayerGui:FindFirstChild('SIGMA BlockSpin🔫👑') then
+        player.PlayerGui.PremiumHub:Destroy()
+    end
+
+    local ScreenGui = Instance.new('ScreenGui')
+
+    ScreenGui.Name = 'PremiumHub'
+    ScreenGui.Parent = player.PlayerGui
+    ScreenGui.ResetOnSpawn = false
+
+    local MainFrame = Instance.new('Frame')
+
+    MainFrame.Name = 'MainFrame'
+    MainFrame.Size = UDim2.new(0, 450, 0, 280)
+    MainFrame.Position = UDim2.new(0.5, -225, 0.5, -140)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(10, 20, 35)
+    MainFrame.BackgroundTransparency = 0.15
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Parent = ScreenGui
+
+    local BackgroundImg = Instance.new('ImageLabel')
+
+    BackgroundImg.Name = 'BackgroundImage'
+    BackgroundImg.Size = UDim2.new(1, 0, 1, 0)
+    BackgroundImg.BackgroundTransparency = 1
+    BackgroundImg.Image = 'rbxassetid://130422589094098'
+    BackgroundImg.ImageTransparency = 0.7
+    BackgroundImg.ScaleType = Enum.ScaleType.Crop
+    BackgroundImg.ZIndex = 0
+    BackgroundImg.Parent = MainFrame
+
+    local BGCorners = Instance.new('UICorner')
+
+    BGCorners.CornerRadius = UDim.new(0, 20)
+    BGCorners.Parent = BackgroundImg
+
+    local UICorner = Instance.new('UICorner')
+
+    UICorner.CornerRadius = UDim.new(0, 20)
+    UICorner.Parent = MainFrame
+
+    local UIStroke = Instance.new('UIStroke')
+
+    UIStroke.Thickness = 2
+    UIStroke.Color = Color3.fromRGB(0, 170, 255)
+    UIStroke.Transparency = 0.4
+    UIStroke.Parent = MainFrame
+
+    local Logo = Instance.new('ImageLabel')
+
+    Logo.Name = 'Logo'
+    Logo.Size = UDim2.new(0, 60, 0, 60)
+    Logo.Position = UDim2.new(0.5, -30, 0, 20)
+    Logo.BackgroundTransparency = 1
+    Logo.Image = 'rbxassetid://130422589094098'
+    Logo.ZIndex = 2
+    Logo.Parent = MainFrame
+
+    local Title = Instance.new('TextLabel')
+
+    Title.Size = UDim2.new(1, 0, 0, 40)
+    Title.Position = UDim2.new(0, 0, 0, 85)
+    Title.BackgroundTransparency = 1
+    Title.Text = 'SIGMA BlockSpin🔫👑 | Script Premium'
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 24
+    Title.Font = Enum.Font.GothamBold
+    Title.ZIndex = 2
+    Title.Parent = MainFrame
+
+    local Subtitle = Instance.new('TextLabel')
+
+    Subtitle.Size = UDim2.new(1, 0, 0, 20)
+    Subtitle.Position = UDim2.new(0, 0, 0, 120)
+    Subtitle.BackgroundTransparency = 1
+    Subtitle.Text = 'Select mode to play'
+    Subtitle.TextColor3 = Color3.fromRGB(150, 210, 255)
+    Subtitle.TextSize = 14
+    Subtitle.Font = Enum.Font.GothamMedium
+    Subtitle.ZIndex = 2
+    Subtitle.Parent = MainFrame
+
+    local function createModeButton(name, text, pos, isSpecial)
+        local btn = Instance.new('TextButton')
+
+        btn.Name = name
+        btn.Size = UDim2.new(0, 380, 0, 45)
+        btn.Position = pos
+        btn.BackgroundColor3 = isSpecial and Color3.fromRGB(0, 100, 200) or Color3.fromRGB(255, 255, 255)
+        btn.BackgroundTransparency = isSpecial and 0.2 or 0.9
+        btn.Text = text
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamSemibold
+        btn.TextSize = 16
+        btn.AutoButtonColor = false
+        btn.ZIndex = 2
+        btn.Parent = MainFrame
+
+        local bCorner = Instance.new('UICorner')
+
+        bCorner.CornerRadius = UDim.new(0, 10)
+        bCorner.Parent = btn
+
+        local bStroke = Instance.new('UIStroke')
+
+        bStroke.Thickness = 1.5
+        bStroke.Color = Color3.fromRGB(0, 170, 255)
+        bStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        bStroke.Transparency = 0.5
+        bStroke.Parent = btn
+
+        btn.MouseEnter:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {
+                BackgroundTransparency = isSpecial and 0 or 0.7,
+                Size = UDim2.new(0, 390, 0, 48),
+                Position = pos + UDim2.new(0, -5, 0, -1.5),
+            }):Play()
+        end)
+        btn.MouseLeave:Connect(function()
+            TweenService:Create(btn, TweenInfo.new(0.2), {
+                BackgroundTransparency = isSpecial and 0.2 or 0.9,
+                Size = UDim2.new(0, 380, 0, 45),
+                Position = pos,
+            }):Play()
+        end)
+
+        return btn
+    end
+
+    local NormalBtn = createModeButton('NormalMode', 'Normal Mode', UDim2.new(0.5, -190, 0, 155), false)
+    local GodBtn = createModeButton('GodMode', 'God Mode', UDim2.new(0.5, -190, 0, 210), true)
+
+    NormalBtn.MouseButton1Click:Connect(function()
+        MainFrame:TweenPosition(UDim2.new(0.5, -225, 1.1, 0), 'In', 'Back', 0.5)
+        task.wait(0.5)
+        ScreenGui:Destroy()
+        RunNormalMode()
+    end)
+    GodBtn.MouseButton1Click:Connect(function()
+        MainFrame:TweenPosition(UDim2.new(0.5, -225, 1.1, 0), 'In', 'Back', 0.5)
+        task.wait(0.5)
+        ScreenGui:Destroy()
+        RunGodMode()
+    end)
+
+    repeat
+        task.wait(0.1)
+    until modeSelected
+else
+    modeSelected = true
+end
+
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Players = game:GetService('Players')
+local RunService = game:GetService('RunService')
+local HttpService = game:GetService('HttpService')
+local UserInputService = game:GetService('UserInputService')
+local Debris = game:GetService('Debris')
+local CurrentCamera = workspace.CurrentCamera
+local Client = Players.LocalPlayer
+local Character = Client.Character or Client.CharacterAdded:Wait()
+local PlayerGui = Client.PlayerGui
+local Humanoid = Character:WaitForChild('Humanoid')
+local RootPart = Character:WaitForChild('HumanoidRootPart')
+local Backpack = Client:WaitForChild('Backpack')
+local Net = require(ReplicatedStorage.Modules.Core.Net)
+local RagdollModule = require(ReplicatedStorage.Modules.Game.Ragdoll)
+local Vechine = require(ReplicatedStorage.Modules.Game.VehicleSystem.Vehicle)
+local CharModule = require(ReplicatedStorage.Modules.Core.Char)
+local SprintModule = require(ReplicatedStorage.Modules.Game.Sprint)
+local CrateController = require(ReplicatedStorage.Modules.Game.CrateSystem.Crate)
+local Settings = {}
+
+function c()
+    return Settings
+end
+
+local function GetDistanceFromRootPart(target)
+    if not target then
+        return math.huge
+    end
+    if not RootPart or not RootPart.Parent then
+        RootPart = Client.Character and Client.Character:FindFirstChild('HumanoidRootPart')
+    end
+    if not RootPart then
+        return math.huge
+    end
+
+    return (RootPart.Position - target.Position).Magnitude
+end
+
+Client.CharacterAdded:Connect(function(newCharacter)
+    Character = newCharacter
+    Humanoid = Character:WaitForChild('Humanoid')
+    RootPart = Character:WaitForChild('HumanoidRootPart')
+    Backpack = Client:WaitForChild('Backpack')
+end)
+
+local Sf = {}
+local Sprint = require(game:GetService('ReplicatedStorage').Modules.Game.Sprint)
+local consume_stamina = Sprint.consume_stamina
+local SprintBar = debug.getupvalue(consume_stamina, 2).sprint_bar
+local holdingJump = false
+local WindUI
+
+do
+    local ok, result = pcall(function()
+        return require('./WindUi')
+    end)
+
+    if ok then
+        WindUI = result
+    else
+        if cloneref(game:GetService('RunService')):IsStudio() then
+            WindUI = require(cloneref(ReplicatedStorage:WaitForChild('WindUI'):WaitForChild('Init')))
+        else
+            WindUI = loadstring(game:HttpGet('https://raw.githubusercontent.com/Footagesus/WindUI/main/dist/main.lua'))()
+        end
+    end
+end
+
+local Icons = loadstring(game:HttpGetAsync('https://raw.githubusercontent.com/Footagesus/Icons/main/Main.lua'))()
+
+Icons.SetIconsType('lucide')
+
+local Window = WindUI:CreateWindow({
+    Icon = 'rbxassetid://130422589094098',
+    IconThemed = true,
+    Title = "SIGMA BlockSpin🔫👑 | buy",
+    Icon = 'rbxassetid://130422589094098',
+    Author = 'by #go8286491 | https://discord.gg/FYwHcq54',
+    Folder = "SIGMA BlockSpin🔫👑",
+    Size = UDim2.fromOffset(400, 400),
+    MinSize = Vector2.new(560, 350),
+    MaxSize = Vector2.new(850, 560),
+    Transparent = true,
+    Theme ='Red',
+    Resizable = true,
+    SideBarWidth = 200,
+    BackgroundImageTransparency = 0.42,
+    HideSearchBar = false,
+    ScrollBarEnabled = false,
+    OpenButton = {
+        Title = "SIGMA BlockSpin🔫👑",
+        CornerRadius = UDim.new(1, 0),
+        StrokeThickness = 3,
+        Enabled = true,
+        Draggable = true,
+        OnlyMobile = false,
+    },
+})
+
+Window:Tag({
+    Title = 'v1.0.4',
+    Color = Color3.fromHex('#30ff6a'),
+    Radius = 13,
+})
+Window:Tag({
+    Title = 'Blockspin',
+    Color = Color3.fromHex('#FF0000'),
+    Radius = 13,
+})
+
+local MainTab = Window:Tab({
+    Title = 'General',
+    Icon = 'globe',
+})
+local BankBalance = MainTab:Button({
+    Title = '\u{1f3e6} Bank Balance',
+    Desc = 'N/A',
+})
+local HandBalance = MainTab:Button({
+    Title = '\u{1f4b8} Hand Balance',
+    Desc = 'N/A',
+})
+
+local function HandMoney()
+    return tonumber(PlayerGui.TopRightHud.Holder.Frame.MoneyTextLabel.Text:match('%$(%d+)'))
+end
+local function ATMMoney()
+    for _, v in ipairs(PlayerGui:GetDescendants())do
+        if v:IsA('TextLabel') and string.find(v.Text, 'Bank Balance') then
+            return tonumber(v.Text:match('%$(%d+)'))
+        end
+    end
+
+    return 0
+end
+
+task.spawn(function()
+    while task.wait(0.2) do
+        BankBalance:SetDesc('<b><font color="#00FF00">$' .. (ATMMoney() or 0) .. '</font></b>')
+        HandBalance:SetDesc('<b><font color="#00f2ff">$' .. (HandMoney() or 0) .. '</font></b>')
+    end
+end)
+MainTab:Section({
+    Title = 'Player Modifier:',
+})
+
+local Players = game:GetService('Players')
+local Player = Players.LocalPlayer
+local ReplicatedStorage = game:GetService('ReplicatedStorage')
+local Net = require(ReplicatedStorage:WaitForChild('Modules'):WaitForChild('Core'):WaitForChild('Net'))
+local Character = Player.Character or Player.CharacterAdded:Wait()
+local Humanoid = Character:WaitForChild('Humanoid')
+local SpeedAmount = 35
+local EnabledSpeed = false
+
+local function c()
+    return {
+        SpeedModifies = EnabledSpeed,
+        SpeedAmount = SpeedAmount,
+    }
+end
+local function SpeedLoop()
+    task.spawn(function()
+        while task.wait(0.1) do
+            if Humanoid and Humanoid.Parent then
+                if c().SpeedModifies then
+                    pcall(function()
+                        Net.send('set_sprinting_1', true)
+                        SprintModule.sprinting.set(true)
+                        Humanoid:SetAttrib
